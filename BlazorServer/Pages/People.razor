@@ -1,0 +1,190 @@
+﻿@page "/people"
+
+@using DataLibrary
+@using System.Linq
+@using BlazorServer.Models
+@using BlazorServer.Shared
+@using Microsoft.Extensions.Configuration
+
+@inject IDataAccess _data
+@inject IConfiguration _config
+<h3>People</h3>
+
+@if (people == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <button class="btn btn btn-outline-dark" @onclick="InsertData">Insert Data</button>
+    <table class="table table-striped table shadow table hover mt-2">
+        <thead>
+            <tr>
+                <th><button class="btn btn-toolbar" id="id" @onclick="(() => SortByItem(idString))">ID</button></th>
+                <th><button class="btn btn-toolbar" id="name" @onclick="(() => SortByItem(nameString))">Name</button></th>
+                <th><button class="btn btn-toolbar" id="email" @onclick="(() => SortByItem(emailString))">EMail</button></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var p in people)
+            {
+                <tr>
+                    <td>@p.id</td>
+                    <td>@p.name</td>
+                    <td>@p.email</td>
+                    <td><button class="btn btn-outline-dark" id="@p.id" @onclick="(() => Edit(p.id))">Edit</button></td>
+                    <td><button class="btn btn-outline-dark" id="@p.id" @onclick="(() => Delete(p.id))">Delete</button></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+
+    List<PersonModel> people;
+
+    private string idString = "id";
+    private string nameString = "name";
+    private string emailString = "email";
+
+    bool isClicked = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        string sql = "select * from users_1 where flag = 0";
+
+        people = await _data.LoadData<PersonModel, dynamic>(sql, new { }, _config.GetConnectionString("default"));
+        //people = people.OrderByDescending(p => p.id).ToList();
+    }
+
+    // Insert Data 
+    [CascadingParameter]
+    public IModalService InsertModal { get; set; }
+    PersonModel person;
+
+    private async Task InsertData()
+    {
+        var messageForm = InsertModal.Show<InsertDataModal>();
+        var result = await messageForm.Result;
+
+        if (!result.Cancelled)
+        {
+            person = (PersonModel)result.Data;
+
+            string sql = "insert into users_1 (name, email) values (@name, @email);";
+            try
+            {
+                await _data.SaveData(sql, new { name = person.name, email = person.email }, _config.GetConnectionString("default"));
+            }
+            catch (Exception)
+            {
+                InsertModal.Show<EmailExists>("Email already exists!");
+            }
+            await OnInitializedAsync();
+        }
+    }
+
+    // Edit Data 
+    [CascadingParameter]
+    public IModalService EditModal { get; set; }
+
+    private async Task Edit(int id)
+    {
+
+        PersonModel personToEdit = new PersonModel();
+
+        string sqlGetItemById = $"select name, email from users_1 where id = {id}";
+        var list = await _data.LoadData<PersonModel, dynamic>(sqlGetItemById, new { }, _config.GetConnectionString("default"));
+        personToEdit = list[0];
+
+        var parameters = new ModalParameters();
+        parameters.Add(nameof(EditDataModal.person), personToEdit);
+
+        var messageForm = EditModal.Show<EditDataModal>("Edit item", parameters);
+        var result = await messageForm.Result;
+
+        if (!result.Cancelled)
+        {
+            personToEdit = (PersonModel)result.Data;
+            string sql = $"update users_1 set name = @name, email = @email where id = {id}";
+            try
+            {
+                await _data.SaveData(sql, new { name = personToEdit.name, email = personToEdit.email }, _config.GetConnectionString("default"));
+            }
+            catch (Exception)
+            {
+                InsertModal.Show<EmailExists>("Email already exists!");
+            }
+            await OnInitializedAsync();
+        }
+    }
+
+    // Delete Data
+    private async Task Delete(int id)
+    {
+        PersonModel personToRenove = new PersonModel();
+
+        string sqlGetItemById = $"select flag from users_1 where id = {id}";
+        var list = await _data.LoadData<PersonModel, dynamic>(sqlGetItemById, new { }, _config.GetConnectionString("default"));
+        personToRenove = list[0];
+
+        var parameters = new ModalParameters();
+        parameters.Add(nameof(DeleteDataModal.person), personToRenove);
+
+        var messageForm = EditModal.Show<DeleteDataModal>("Delete item", parameters);
+        var result = await messageForm.Result;
+
+        if (!result.Cancelled)
+        {
+            personToRenove = (PersonModel)result.Data;
+            string sql = $"update users_1 set flag = 1 where id = {id}";
+            await _data.SaveData(sql, new { name = personToRenove.name, email = personToRenove.email }, _config.GetConnectionString("default"));
+            await OnInitializedAsync();
+        }
+    }
+
+    // Email already exists
+    [CascadingParameter]
+    public IModalService emailExistsModal { get; set; }
+
+    void ShowEmailExistsModal()
+    {
+        var options = new ModalOptions { Class = "blazored-prompt-modal" };
+        emailExistsModal.Show<EmailExists>("Email exists", options);
+    }
+
+    private void SortByItem(string item)
+    {
+        if (item == "id" && isClicked)
+        {
+            people = people.OrderBy(p => p.id).ToList();
+            isClicked = !isClicked;
+        }
+        else if (item == "id" && !isClicked)
+        {
+            people = people.OrderByDescending(p => p.id).ToList();
+            isClicked = !isClicked;
+        }
+        else if (item == "name" && isClicked)
+        {
+            people = people.OrderBy(p => p.name).ToList();
+            isClicked = !isClicked;
+        }
+        else if (item == "name" && !isClicked)
+        {
+            people = people.OrderByDescending(p => p.name).ToList();
+            isClicked = !isClicked;
+        }
+        else if (item == "email" && isClicked)
+        {
+            people = people.OrderBy(p => p.email).ToList();
+            isClicked = !isClicked;
+        }
+        else if (item == "email" && !isClicked)
+        {
+            people = people.OrderByDescending(p => p.email).ToList();
+            isClicked = !isClicked;
+        }
+    }
+}

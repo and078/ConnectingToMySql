@@ -1,0 +1,32 @@
+﻿@using BlazorServer.Models
+
+<div class="simple-form">
+    <p>@person.id</p>
+    <div class="form-group">
+        <label for="name">Name</label>
+        <input @bind="person.name" type="text" class="form-control" id="name" placeholder="@person.name" />
+    </div>
+    <div class="form-group">
+        <label for="email">Email</label>
+        <input @bind="person.email" type="text" class="form-control" id="email" placeholder="@person.email" />
+    </div>
+
+    <button @onclick="SubmitForm" class="btn btn-outline-dark">Submit</button>
+    <button @onclick="Cancel" class="btn btn-secondary">Cancel</button>
+</div>
+
+@code {
+
+    [CascadingParameter]
+    BlazoredModalInstance BlazoredModal { get; set; }
+
+    [Parameter]
+    public PersonModel person { get; set; }
+
+
+    protected override void OnInitialized() => BlazoredModal.SetTitle("Edit Data");
+
+    async Task SubmitForm() => await BlazoredModal.CloseAsync(ModalResult.Ok<PersonModel>(person));
+    async Task Cancel() => await BlazoredModal.CancelAsync();
+
+}

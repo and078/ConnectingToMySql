@@ -1,0 +1,11 @@
+﻿<div>
+    <p>Email already exists</p>
+
+    <button @onclick="Close" class="btn btn-outline-dark">Close</button>
+    <button @onclick="Cancel" class="btn btn-secondary">Cancel</button>
+</div>
+
+@code { [CascadingParameter] BlazoredModalInstance BlazoredModal { get; set; }
+
+            async Task Close() => await BlazoredModal.CloseAsync(ModalResult.Ok(true));
+            async Task Cancel() => await BlazoredModal.CancelAsync(); }
