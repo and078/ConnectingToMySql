@@ -8,7 +8,7 @@
 
 @inject IDataAccess _data
 @inject IConfiguration _config
-<h3>People</h3>
+<h3>Customers</h3>
 
 @if (people == null)
 {
@@ -17,11 +17,12 @@
 else
 {
     <button class="btn btn btn-outline-dark" @onclick="InsertData">Insert Data</button>
-    <table class="table table-striped table shadow table hover mt-2">
+    <table class="table table-striped table shadow table hover mt-1">
         <thead>
             <tr>
                 <th><button class="btn btn-toolbar" id="id" @onclick="(() => SortByItem(idString))">ID</button></th>
                 <th><button class="btn btn-toolbar" id="name" @onclick="(() => SortByItem(nameString))">Name</button></th>
+                <th><button class="btn btn-toolbar" id="phone" @onclick="(() => SortByItem(phoneString))">Phone</button></th>
                 <th><button class="btn btn-toolbar" id="email" @onclick="(() => SortByItem(emailString))">EMail</button></th>
             </tr>
         </thead>
@@ -31,6 +32,7 @@ else
                 <tr>
                     <td>@p.id</td>
                     <td>@p.name</td>
+                    <td>@p.phone</td>
                     <td>@p.email</td>
                     <td><button class="btn btn-outline-dark" id="@p.id" @onclick="(() => Edit(p.id))">Edit</button></td>
                     <td><button class="btn btn-outline-dark" id="@p.id" @onclick="(() => Delete(p.id))">Delete</button></td>
@@ -46,16 +48,16 @@ else
 
     private string idString = "id";
     private string nameString = "name";
+    private string phoneString = "phone";
     private string emailString = "email";
 
     bool isClicked = false;
 
     protected override async Task OnInitializedAsync()
     {
-        string sql = "select * from users_1 where flag = 0";
+        string sql = "select * from customer";
 
         people = await _data.LoadData<PersonModel, dynamic>(sql, new { }, _config.GetConnectionString("default"));
-        //people = people.OrderByDescending(p => p.id).ToList();
     }
 
     // Insert Data 
@@ -72,10 +74,10 @@ else
         {
             person = (PersonModel)result.Data;
 
-            string sql = "insert into users_1 (name, email) values (@name, @email);";
+            string sql = "insert into customer (name, phone, email) values (@name, @phone, @email);";
             try
             {
-                await _data.SaveData(sql, new { name = person.name, email = person.email }, _config.GetConnectionString("default"));
+                await _data.SaveData(sql, new { name = person.name, phone = person.phone, email = person.email }, _config.GetConnectionString("default"));
             }
             catch (Exception)
             {
@@ -94,7 +96,7 @@ else
 
         PersonModel personToEdit = new PersonModel();
 
-        string sqlGetItemById = $"select name, email from users_1 where id = {id}";
+        string sqlGetItemById = $"select * from customer where id = {id}";
         var list = await _data.LoadData<PersonModel, dynamic>(sqlGetItemById, new { }, _config.GetConnectionString("default"));
         personToEdit = list[0];
 
@@ -107,10 +109,10 @@ else
         if (!result.Cancelled)
         {
             personToEdit = (PersonModel)result.Data;
-            string sql = $"update users_1 set name = @name, email = @email where id = {id}";
+            string sql = $"update customer set name = @name, phone = @phone, email = @email where id = {id}";
             try
             {
-                await _data.SaveData(sql, new { name = personToEdit.name, email = personToEdit.email }, _config.GetConnectionString("default"));
+                await _data.SaveData(sql, new { name = personToEdit.name, phone = personToEdit.phone, email = personToEdit.email }, _config.GetConnectionString("default"));
             }
             catch (Exception)
             {
@@ -123,23 +125,23 @@ else
     // Delete Data
     private async Task Delete(int id)
     {
-        PersonModel personToRenove = new PersonModel();
+        PersonModel personToRemove = new PersonModel();
 
-        string sqlGetItemById = $"select flag from users_1 where id = {id}";
+        string sqlGetItemById = $"select * from customer where id = {id}";
         var list = await _data.LoadData<PersonModel, dynamic>(sqlGetItemById, new { }, _config.GetConnectionString("default"));
-        personToRenove = list[0];
+        personToRemove = list[0];
 
         var parameters = new ModalParameters();
-        parameters.Add(nameof(DeleteDataModal.person), personToRenove);
+        parameters.Add(nameof(DeleteDataModal.person), personToRemove);
 
         var messageForm = EditModal.Show<DeleteDataModal>("Delete item", parameters);
         var result = await messageForm.Result;
 
         if (!result.Cancelled)
         {
-            personToRenove = (PersonModel)result.Data;
-            string sql = $"update users_1 set flag = 1 where id = {id}";
-            await _data.SaveData(sql, new { name = personToRenove.name, email = personToRenove.email }, _config.GetConnectionString("default"));
+            personToRemove = (PersonModel)result.Data;
+            string sql = $"delete from customer where id = {id}";
+            await _data.SaveData(sql, new { name = personToRemove.name, email = personToRemove.email }, _config.GetConnectionString("default"));
             await OnInitializedAsync();
         }
     }
@@ -174,6 +176,16 @@ else
         else if (item == "name" && !isClicked)
         {
             people = people.OrderByDescending(p => p.name).ToList();
+            isClicked = !isClicked;
+        }
+        else if (item == "phone" && isClicked)
+        {
+            people = people.OrderBy(p => p.phone).ToList();
+            isClicked = !isClicked;
+        }
+        else if (item == "phone" && !isClicked)
+        {
+            people = people.OrderByDescending(p => p.phone).ToList();
             isClicked = !isClicked;
         }
         else if (item == "email" && isClicked)
