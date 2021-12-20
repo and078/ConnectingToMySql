@@ -1,0 +1,75 @@
+﻿@page "/products"
+
+@using DataLibrary
+@using System.Linq
+@using BlazorServer.Models
+@using BlazorServer.Shared
+@using Microsoft.Extensions.Configuration
+
+@inject IDataAccess _data
+@inject IConfiguration _config
+<h3>Products</h3>
+
+@if (products == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <button class="btn btn btn-outline-dark" @onclick="AddProduct">Add product</button>
+    <table class="table table-striped table shadow table hover mt-1">
+        <thead>
+            <tr>
+                <th><button class="btn btn-toolbar">ID</button></th>
+                <th><button class="btn btn-toolbar">Name</button></th>
+                <th><button class="btn btn-toolbar">Description</button></th>
+                <th><button class="btn btn-toolbar">Price</button></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var p in products)
+            {
+                <tr>
+                    <td>@p.id</td>
+                    <td>@p.name</td>
+                    <td>@p.description</td>
+                    <td>@p.price</td>
+                    @*<td><button class="btn btn-outline-dark" id="@p.id" @onclick="(() => Edit(p.id))">Edit</button></td>
+                    <td><button class="btn btn-outline-dark" id="@p.id" @onclick="(() => Delete(p.id))">Delete</button></td>*@
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    List<ProductModel> products;
+    protected override async Task OnInitializedAsync()
+    {
+        string sql = "select * from product";
+
+        products = await _data.LoadData<ProductModel, dynamic>(sql, new { }, _config.GetConnectionString("default"));
+    }
+
+    // Insert Data 
+    [CascadingParameter]
+    public IModalService InsertModal { get; set; }
+    ProductModel product;
+
+    private async Task AddProduct()
+    {
+        var messageForm = InsertModal.Show<InsertProductModal>();
+        var result = await messageForm.Result;
+
+        if (!result.Cancelled)
+        {
+            product = (ProductModel)result.Data;
+
+            string sql = "insert into customer (name, description, price) values (@name, @description, @price);";
+           
+            await _data.SaveData(sql, new { name = product.name, description = product.description, price = product.price}, _config.GetConnectionString("default"));
+           
+            await OnInitializedAsync();
+        }
+    }
+}
