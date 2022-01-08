@@ -4,17 +4,17 @@
 
     <div class="form-group">
         <label for="name">Name</label>
-        <input @bind="person.name" type="text" class="form-control" id="name" placeholder="Enter name" />
+        <input @bind="product.name" type="text" class="form-control" id="name" placeholder="Enter name" />
     </div>
 
     <div class="form-group">
         <label for="email">Phone</label>
-        <input @bind="person.phone" type="text" class="form-control" id="phone" placeholder="Enter phone" />
+        <input @bind="product.description" type="text" class="form-control" id="description" placeholder="Enter description" />
     </div>
 
     <div class="form-group">
         <label for="email">Email</label>
-        <input @bind="person.email" type="text" class="form-control" id="email" placeholder="Enter email" />
+        <input @bind="product.price" type="text" class="form-control" id="price" placeholder="Enter price" />
     </div>
 
     <button @onclick="SubmitForm" class="btn btn-outline-dark">Submit</button>
@@ -26,11 +26,11 @@
     [CascadingParameter]
     BlazoredModalInstance BlazoredModal { get; set; }
 
-    PersonModel person = new();
+    ProductModel product = new();
 
     protected override void OnInitialized() => BlazoredModal.SetTitle("Enter Data");
 
-    async Task SubmitForm() => await BlazoredModal.CloseAsync(ModalResult.Ok<PersonModel>(person));
+    async Task SubmitForm() => await BlazoredModal.CloseAsync(ModalResult.Ok<ProductModel>(product));
     async Task Cancel() => await BlazoredModal.CancelAsync();
 
 }

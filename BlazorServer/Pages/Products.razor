@@ -65,7 +65,7 @@ else
         {
             product = (ProductModel)result.Data;
 
-            string sql = "insert into customer (name, description, price) values (@name, @description, @price);";
+            string sql = "insert into product (name, description, price) values (@name, @description, @price);";
            
             await _data.SaveData(sql, new { name = product.name, description = product.description, price = product.price}, _config.GetConnectionString("default"));
            
